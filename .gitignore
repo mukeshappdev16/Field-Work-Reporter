@@ -1,0 +1,44 @@
+# Gradle files
+.gradle/
+build/
+
+# Kotlin
+.kotlin/
+
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Android specific
+captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+
+# Output files
+*.apk
+*.aar
+*.ap_
+*.dex
+*.class
+
+# Log files
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets / Signing
+google-services.json
+*.keystore
+*.jks
+!debug.keystore
+
+# Backup files
+*.bak
+*.swp
+*~
