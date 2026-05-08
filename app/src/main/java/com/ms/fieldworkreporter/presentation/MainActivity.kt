@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -105,15 +106,27 @@ fun MainScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Field Work Reporter") },
+                title = { 
+                    Text(
+                        "Reporter", 
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge
+                    ) 
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
                 actions = {
                     if (selectedItem == 0) {
-                        IconButton(onClick = { showAddTaskDialog = true }) {
-                            Icon(Icons.Default.Add, contentDescription = "Add Task")
+                        IconButton(
+                            onClick = { showAddTaskDialog = true }
+                        ) {
+                            Icon(
+                                Icons.Default.Add, 
+                                contentDescription = "Add Task",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }

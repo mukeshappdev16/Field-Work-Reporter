@@ -16,7 +16,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,7 +30,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.ms.fieldworkreporter.util.FileUtils
@@ -89,7 +93,14 @@ fun TaskDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(taskTitle) },
+                title = { 
+                    Text(
+                        taskTitle, 
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -100,25 +111,22 @@ fun TaskDetailScreen(
                 },
                 actions = {
                     if (!isCompleted) {
-                        IconButton(
+                        TextButton(
                             onClick = {
                                 viewModel.saveTask(taskTitle, taskDescription) {
-                                    Toast.makeText(context, "Task saved successfully!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
                                 }
                             },
                             enabled = hasAttachments
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Save, 
-                                contentDescription = "Save",
-                                tint = if (hasAttachments) LocalContentColor.current else LocalContentColor.current.copy(alpha = 0.38f)
-                            )
+                            Text("Save", fontWeight = FontWeight.Bold)
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
@@ -142,60 +150,77 @@ fun TaskDetailScreen(
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             item {
-                SectionHeader("Description")
-                Text(
-                    text = taskDescription,
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                Column {
+                    SectionHeader("Description", Icons.AutoMirrored.Filled.Assignment)
+                    Text(
+                        text = taskDescription,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    )
+                }
             }
 
             item {
-                SectionHeader("Photos")
-                PhotoGallery(
-                    photos = viewModel.photos,
-                    onImageClick = { selectedImageUri = it }
-                )
+                Column {
+                    SectionHeader("Photos", Icons.Default.PhotoLibrary)
+                    PhotoGallery(
+                        photos = viewModel.photos,
+                        onImageClick = { selectedImageUri = it }
+                    )
+                }
             }
 
             item {
-                SectionHeader("Voice Notes")
-                VoiceNoteList(
-                    voiceNotes = viewModel.voiceNotes,
-                    currentlyPlaying = viewModel.currentlyPlayingFile,
-                    onPlayClick = { viewModel.playVoiceNote(it) },
-                    onDeleteClick = { viewModel.deleteVoiceNote(it) },
-                    showDelete = !isCompleted
-                )
+                Column {
+                    SectionHeader("Voice Notes", Icons.Default.Mic)
+                    VoiceNoteList(
+                        voiceNotes = viewModel.voiceNotes,
+                        currentlyPlaying = viewModel.currentlyPlayingFile,
+                        onPlayClick = { viewModel.playVoiceNote(it) },
+                        onDeleteClick = { viewModel.deleteVoiceNote(it) },
+                        showDelete = !isCompleted
+                    )
+                }
             }
 
             item {
-                SectionHeader("Text Notes")
-                TextNoteList(
-                    notes = viewModel.textNotes,
-                    onDeleteClick = { viewModel.deleteTextNote(it) },
-                    showDelete = !isCompleted
-                )
+                Column {
+                    SectionHeader("Text Notes", Icons.AutoMirrored.Filled.Notes)
+                    TextNoteList(
+                        notes = viewModel.textNotes,
+                        onDeleteClick = { viewModel.deleteTextNote(it) },
+                        showDelete = !isCompleted
+                    )
+                }
             }
             
             item {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     if (isCompleted) {
-                        Text(
-                            text = "This task is completed. Now can not be updated.",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
+                        Surface(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "This task is completed. It cannot be updated.",
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
                     }
 
                     Button(
@@ -204,26 +229,30 @@ fun TaskDetailScreen(
                                 Toast.makeText(context, "Task Completed!", Toast.LENGTH_SHORT).show()
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isCompleted && hasAttachments
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        enabled = !isCompleted && hasAttachments,
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                     ) {
                         Icon(Icons.Default.CheckCircle, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Complete Task")
+                        Text("Complete Task", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
 
                     OutlinedButton(
                         onClick = { viewModel.syncTask() },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        enabled = isCompleted,
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Sync, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Initiate Sync")
+                        Text("Initiate Sync", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
             
-            item { Spacer(modifier = Modifier.height(80.dp)) }
+            item { Spacer(modifier = Modifier.height(100.dp)) }
         }
     }
 
@@ -301,18 +330,23 @@ fun ImagePreviewDialog(
 }
 
 @Composable
-fun SectionHeader(title: String) {
-    Column {
+fun SectionHeader(title: String, icon: ImageVector) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(bottom = 8.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold
-        )
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 8.dp),
-            thickness = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant
         )
     }
 }
@@ -322,24 +356,24 @@ fun PhotoGallery(
     photos: List<Uri>,
     onImageClick: (Uri) -> Unit
 ) {
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(photos) { uri ->
-            AsyncImage(
-                model = uri,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { onImageClick(uri) },
-                contentScale = ContentScale.Crop
-            )
-        }
-        if (photos.isEmpty()) {
-            item {
-                AddContentPlaceholder(Icons.Default.AddAPhoto, "No Photos Captured")
+    if (photos.isEmpty()) {
+        AddContentPlaceholder(Icons.Default.AddAPhoto, "No Photos Captured", isFullWidth = true)
+    } else {
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(vertical = 4.dp)
+        ) {
+            items(photos) { uri ->
+                AsyncImage(
+                    model = uri,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(140.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { onImageClick(uri) },
+                    contentScale = ContentScale.Crop
+                )
             }
         }
     }
@@ -498,24 +532,29 @@ fun VoiceRecorderDialog(
 
 @Composable
 fun AddContentPlaceholder(icon: ImageVector, label: String, isFullWidth: Boolean = false) {
-    OutlinedCard(
-        modifier = if (isFullWidth) Modifier.fillMaxWidth() else Modifier.size(120.dp),
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.outlineVariant)
-        )
+    Surface(
+        modifier = if (isFullWidth) Modifier.fillMaxWidth() else Modifier.size(140.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(8.dp),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+            Icon(
+                icon, 
+                contentDescription = null, 
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
             )
         }
     }
