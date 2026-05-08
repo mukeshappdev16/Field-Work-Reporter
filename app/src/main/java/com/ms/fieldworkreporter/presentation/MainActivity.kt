@@ -14,11 +14,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import com.ms.fieldworkreporter.presentation.detail.TaskDetailScreen
 import com.ms.fieldworkreporter.presentation.home.AddTaskDialog
 import com.ms.fieldworkreporter.presentation.home.HomeScreen
@@ -26,9 +25,6 @@ import com.ms.fieldworkreporter.presentation.home.HomeViewModel
 import com.ms.fieldworkreporter.presentation.settings.SettingsScreen
 import com.ms.fieldworkreporter.ui.theme.FieldWorkReporterTheme
 import dagger.hilt.android.AndroidEntryPoint
-import java.net.URLDecoder
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -48,30 +44,24 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val homeViewModel: HomeViewModel = hiltViewModel()
 
-    NavHost(navController = navController, startDestination = "main") {
-        composable("main") {
+    NavHost(navController = navController, startDestination = Routes.Home) {
+        composable<Routes.Home> {
             MainScreen(
                 homeViewModel = homeViewModel,
             ) { task ->
-                val encodedTitle =
-                    URLEncoder.encode(task.title, StandardCharsets.UTF_8.toString())
-                val encodedDesc =
-                    URLEncoder.encode(task.description, StandardCharsets.UTF_8.toString())
-                navController.navigate("taskDetail/$encodedTitle/$encodedDesc")
+                navController.navigate(
+                    Routes.TaskDetail(
+                        title = task.title,
+                        description = task.description
+                    )
+                )
             }
         }
-        composable(
-            route = "taskDetail/{title}/{description}",
-            arguments = listOf(
-                navArgument("title") { type = NavType.StringType },
-                navArgument("description") { type = NavType.StringType }
-            )
-        ) { backStackEntry ->
-            val title = backStackEntry.arguments?.getString("title") ?: ""
-            val description = backStackEntry.arguments?.getString("description") ?: ""
+        composable<Routes.TaskDetail> { backStackEntry ->
+            val taskDetail: Routes.TaskDetail = backStackEntry.toRoute()
             TaskDetailScreen(
-                taskTitle = URLDecoder.decode(title, StandardCharsets.UTF_8.toString()),
-                taskDescription = URLDecoder.decode(description, StandardCharsets.UTF_8.toString()),
+                taskTitle = taskDetail.title,
+                taskDescription = taskDetail.description,
                 onBackClick = { navController.popBackStack() }
             )
         }
