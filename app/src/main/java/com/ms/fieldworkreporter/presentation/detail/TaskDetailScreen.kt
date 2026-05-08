@@ -2,6 +2,7 @@ package com.ms.fieldworkreporter.presentation.detail
 
 import android.Manifest
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -28,7 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.ms.fieldworkreporter.util.FileUtils
 import java.io.File
@@ -39,7 +40,7 @@ fun TaskDetailScreen(
     taskTitle: String,
     taskDescription: String,
     onBackClick: () -> Unit,
-    viewModel: TaskDetailViewModel = viewModel()
+    viewModel: TaskDetailViewModel = hiltViewModel()
 ) {
     var showFabMenu by remember { mutableStateOf(false) }
     var showNoteDialog by remember { mutableStateOf(false) }
@@ -86,6 +87,16 @@ fun TaskDetailScreen(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        viewModel.saveTask(taskTitle, taskDescription) {
+                            Toast.makeText(context, "Task saved successfully!", Toast.LENGTH_SHORT).show()
+                            onBackClick()
+                        }
+                    }) {
+                        Icon(imageVector = Icons.Default.Save, contentDescription = "Save")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

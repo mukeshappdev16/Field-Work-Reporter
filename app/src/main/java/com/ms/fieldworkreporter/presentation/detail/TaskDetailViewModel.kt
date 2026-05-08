@@ -9,11 +9,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.ms.fieldworkreporter.data.repository.TaskRepository
 import com.ms.fieldworkreporter.util.FileUtils
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
 import java.io.File
+import javax.inject.Inject
 
-class TaskDetailViewModel(application: Application) : AndroidViewModel(application) {
+@HiltViewModel
+class TaskDetailViewModel @Inject constructor(
+    private val repository: TaskRepository,
+    private val application: Application
+) : ViewModel() {
 
     val photos = mutableStateListOf<Uri>()
     val textNotes = mutableStateListOf<String>()
@@ -25,6 +34,19 @@ class TaskDetailViewModel(application: Application) : AndroidViewModel(applicati
     private var mediaPlayer: MediaPlayer? = null
     var currentlyPlayingFile by mutableStateOf<File?>(null)
         private set
+
+    fun saveTask(title: String, description: String, onSaved: () -> Unit) {
+        viewModelScope.launch {
+            repository.saveTask(
+                title = title,
+                description = description,
+                photos = photos.toList(),
+                notes = textNotes.toList(),
+                voices = voiceNotes.toList()
+            )
+            onSaved()
+        }
+    }
 
     fun addTextNote(note: String) {
         if (note.isNotBlank()) {
@@ -53,13 +75,13 @@ class TaskDetailViewModel(application: Application) : AndroidViewModel(applicati
 
     fun startRecording(taskName: String) {
         val fileName = FileUtils.generateFileName(taskName, "Voice", ".m4a")
-        val storageDir: File? = getApplication<Application>().getExternalFilesDir("Audio")
+        val storageDir: File? = application.getExternalFilesDir("Audio")
         if (storageDir?.exists() == false) storageDir.mkdirs()
         
         currentVoiceFile = File(storageDir, fileName)
         
         mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            MediaRecorder(getApplication())
+            MediaRecorder(application)
         } else {
             @Suppress("DEPRECATION")
             MediaRecorder()

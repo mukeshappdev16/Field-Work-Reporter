@@ -1,17 +1,28 @@
 package com.ms.fieldworkreporter.presentation.home
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.ms.fieldworkreporter.data.repository.TaskRepository
 import com.ms.fieldworkreporter.domain.model.Task
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class HomeViewModel : ViewModel() {
-    private val _tasks = MutableStateFlow<List<Task>>(emptyList())
-    val tasks: StateFlow<List<Task>> = _tasks.asStateFlow()
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    private val repository: TaskRepository
+) : ViewModel() {
+    val tasks: StateFlow<List<Task>> = repository.getAllTasks()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     fun addTask(title: String, description: String) {
-        val nextId = (_tasks.value.maxOfOrNull { it.id } ?: 0) + 1
-        _tasks.value += Task(nextId, title, description)
+        viewModelScope.launch {
+            repository.saveTask(title, description, emptyList(), emptyList(), emptyList())
+        }
     }
 }
