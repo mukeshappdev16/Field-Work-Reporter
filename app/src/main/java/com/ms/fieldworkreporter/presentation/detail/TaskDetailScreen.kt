@@ -37,11 +37,16 @@ import java.io.File
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskDetailScreen(
+    taskId: Long? = null,
     taskTitle: String,
     taskDescription: String,
     onBackClick: () -> Unit,
     viewModel: TaskDetailViewModel = hiltViewModel()
 ) {
+    LaunchedEffect(taskId) {
+        viewModel.setTaskId(taskId)
+    }
+
     var showFabMenu by remember { mutableStateOf(false) }
     var showNoteDialog by remember { mutableStateOf(false) }
     var showVoiceDialog by remember { mutableStateOf(false) }
@@ -50,6 +55,10 @@ fun TaskDetailScreen(
     var tempImageUri by remember { mutableStateOf<Uri?>(null) }
     
     val context = LocalContext.current
+    val isCompleted = viewModel.isCompleted
+    val hasAttachments = viewModel.photos.isNotEmpty() || 
+                       viewModel.textNotes.isNotEmpty() || 
+                       viewModel.voiceNotes.isNotEmpty()
     
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -90,13 +99,21 @@ fun TaskDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        viewModel.saveTask(taskTitle, taskDescription) {
-                            Toast.makeText(context, "Task saved successfully!", Toast.LENGTH_SHORT).show()
-                            onBackClick()
+                    if (!isCompleted) {
+                        IconButton(
+                            onClick = {
+                                viewModel.saveTask(taskTitle, taskDescription) {
+                                    Toast.makeText(context, "Task saved successfully!", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            enabled = hasAttachments
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Save, 
+                                contentDescription = "Save",
+                                tint = if (hasAttachments) LocalContentColor.current else LocalContentColor.current.copy(alpha = 0.38f)
+                            )
                         }
-                    }) {
-                        Icon(imageVector = Icons.Default.Save, contentDescription = "Save")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -106,18 +123,20 @@ fun TaskDetailScreen(
             )
         },
         floatingActionButton = {
-            TaskActionSpeedDial(
-                isOpen = showFabMenu,
-                onToggle = { showFabMenu = !showFabMenu },
-                onAction = { action ->
-                    showFabMenu = false
-                    when (action) {
-                        "photo" -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                        "voice" -> recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        "note" -> showNoteDialog = true
+            if (!isCompleted) {
+                TaskActionSpeedDial(
+                    isOpen = showFabMenu,
+                    onToggle = { showFabMenu = !showFabMenu },
+                    onAction = { action ->
+                        showFabMenu = false
+                        when (action) {
+                            "photo" -> cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                            "voice" -> recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                            "note" -> showNoteDialog = true
+                        }
                     }
-                }
-            )
+                )
+            }
         }
     ) { innerPadding ->
         LazyColumn(
@@ -149,15 +168,59 @@ fun TaskDetailScreen(
                     voiceNotes = viewModel.voiceNotes,
                     currentlyPlaying = viewModel.currentlyPlayingFile,
                     onPlayClick = { viewModel.playVoiceNote(it) },
-                    onDeleteClick = { viewModel.deleteVoiceNote(it) }
+                    onDeleteClick = { viewModel.deleteVoiceNote(it) },
+                    showDelete = !isCompleted
                 )
             }
 
             item {
                 SectionHeader("Text Notes")
                 TextNoteList(
-                    notes = viewModel.textNotes
-                ) { viewModel.deleteTextNote(it) }
+                    notes = viewModel.textNotes,
+                    onDeleteClick = { viewModel.deleteTextNote(it) },
+                    showDelete = !isCompleted
+                )
+            }
+            
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (isCompleted) {
+                        Text(
+                            text = "This task is completed. Now can not be updated.",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            viewModel.saveTask(taskTitle, taskDescription, complete = true) {
+                                Toast.makeText(context, "Task Completed!", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isCompleted && hasAttachments
+                    ) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Complete Task")
+                    }
+
+                    OutlinedButton(
+                        onClick = { viewModel.syncTask() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Sync, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Initiate Sync")
+                    }
+                }
             }
             
             item { Spacer(modifier = Modifier.height(80.dp)) }
@@ -192,7 +255,8 @@ fun TaskDetailScreen(
             onDelete = {
                 viewModel.deletePhoto(uri)
                 selectedImageUri = null
-            }
+            },
+            isEditable = !isCompleted
         )
     }
 }
@@ -201,7 +265,8 @@ fun TaskDetailScreen(
 fun ImagePreviewDialog(
     uri: Uri,
     onDismiss: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    isEditable: Boolean = true
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -218,13 +283,15 @@ fun ImagePreviewDialog(
             )
         },
         confirmButton = {
-            Button(
-                onClick = onDelete,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-            ) {
-                Icon(Icons.Default.Delete, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Delete")
+            if (isEditable) {
+                Button(
+                    onClick = onDelete,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Delete")
+                }
             }
         },
         dismissButton = {
@@ -283,7 +350,8 @@ fun VoiceNoteList(
     voiceNotes: List<File>,
     currentlyPlaying: File?,
     onPlayClick: (File) -> Unit,
-    onDeleteClick: (File) -> Unit
+    onDeleteClick: (File) -> Unit,
+    showDelete: Boolean = true
 ) {
     if (voiceNotes.isEmpty()) {
         AddContentPlaceholder(Icons.Default.Mic, "No Voice Notes", isFullWidth = true)
@@ -307,12 +375,14 @@ fun VoiceNoteList(
                             Text(file.name, style = MaterialTheme.typography.bodyMedium)
                             Text("${file.length() / 1024} KB", style = MaterialTheme.typography.labelSmall)
                         }
-                        IconButton(onClick = { onDeleteClick(file) }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = MaterialTheme.colorScheme.error
-                            )
+                        if (showDelete) {
+                            IconButton(onClick = { onDeleteClick(file) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
                 }
@@ -324,7 +394,8 @@ fun VoiceNoteList(
 @Composable
 fun TextNoteList(
     notes: List<String>,
-    onDeleteClick: (String) -> Unit
+    onDeleteClick: (String) -> Unit,
+    showDelete: Boolean = true
 ) {
     if (notes.isEmpty()) {
         AddContentPlaceholder(Icons.Default.EditNote, "No Text Notes", isFullWidth = true)
@@ -341,12 +412,14 @@ fun TextNoteList(
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        IconButton(onClick = { onDeleteClick(note) }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete",
-                                tint = MaterialTheme.colorScheme.error
-                            )
+                        if (showDelete) {
+                            IconButton(onClick = { onDeleteClick(note) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     }
                 }

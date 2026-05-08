@@ -24,4 +24,7 @@ interface TaskDao {
 
     @Delete
     suspend fun deleteTask(task: TaskEntity)
+
+    @Query("DELETE FROM task_attachments WHERE taskId = :taskId")
+    suspend fun deleteAttachmentsByTaskId(taskId: Long)
 }

@@ -8,6 +8,7 @@ sealed interface Routes {
 
     @Serializable
     data class TaskDetail(
+        val id: Long? = null,
         val title: String,
         val description: String
     ) : Routes

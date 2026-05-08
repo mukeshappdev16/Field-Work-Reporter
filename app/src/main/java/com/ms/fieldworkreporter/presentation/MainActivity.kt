@@ -48,18 +48,30 @@ fun AppNavigation() {
         composable<Routes.Home> {
             MainScreen(
                 homeViewModel = homeViewModel,
-            ) { task ->
-                navController.navigate(
-                    Routes.TaskDetail(
-                        title = task.title,
-                        description = task.description
+                onTaskClick = { task ->
+                    navController.navigate(
+                        Routes.TaskDetail(
+                            id = task.id,
+                            title = task.title,
+                            description = task.description
+                        )
                     )
-                )
-            }
+                },
+                onAddTask = { title, description ->
+                    navController.navigate(
+                        Routes.TaskDetail(
+                            id = null,
+                            title = title,
+                            description = description
+                        )
+                    )
+                }
+            )
         }
         composable<Routes.TaskDetail> { backStackEntry ->
             val taskDetail: Routes.TaskDetail = backStackEntry.toRoute()
             TaskDetailScreen(
+                taskId = taskDetail.id,
                 taskTitle = taskDetail.title,
                 taskDescription = taskDetail.description,
                 onBackClick = { navController.popBackStack() }
@@ -72,7 +84,8 @@ fun AppNavigation() {
 @Composable
 fun MainScreen(
     homeViewModel: HomeViewModel,
-    onTaskClick: (com.ms.fieldworkreporter.domain.model.Task) -> Unit
+    onTaskClick: (com.ms.fieldworkreporter.domain.model.Task) -> Unit,
+    onAddTask: (String, String) -> Unit
 ) {
     var selectedItem by remember { mutableIntStateOf(0) }
     val items = listOf("Home", "Settings")
@@ -84,7 +97,7 @@ fun MainScreen(
         AddTaskDialog(
             onDismiss = { showAddTaskDialog = false },
             onConfirm = { title, description ->
-                homeViewModel.addTask(title, description)
+                onAddTask(title, description)
             },
         )
     }

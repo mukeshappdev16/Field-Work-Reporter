@@ -26,25 +26,29 @@ fun AddTaskDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text("Task Name") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
                     label = { Text("Description") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
             }
         },
         confirmButton = {
+            val isValid = title.isNotBlank() && description.isNotBlank()
             Button(
                 onClick = {
-                    if (title.isNotBlank() && description.isNotBlank()) {
+                    if (isValid) {
                         onConfirm(title, description)
                         onDismiss()
                     }
-                }
+                },
+                enabled = isValid
             ) {
                 Text("Add")
             }

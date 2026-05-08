@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ms.fieldworkreporter.data.local.entity.AttachmentType
 import com.ms.fieldworkreporter.data.repository.TaskRepository
 import com.ms.fieldworkreporter.util.FileUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +29,11 @@ class TaskDetailViewModel @Inject constructor(
     val textNotes = mutableStateListOf<String>()
     val voiceNotes = mutableStateListOf<File>()
 
+    var isCompleted by mutableStateOf(false)
+        private set
+
+    private var taskId: Long? = null
+
     private var mediaRecorder: MediaRecorder? = null
     private var currentVoiceFile: File? = null
 
@@ -35,17 +41,48 @@ class TaskDetailViewModel @Inject constructor(
     var currentlyPlayingFile by mutableStateOf<File?>(null)
         private set
 
-    fun saveTask(title: String, description: String, onSaved: () -> Unit) {
+    fun setTaskId(id: Long?) {
+        if (id != null && taskId == null) {
+            taskId = id
+            loadTaskDetails(id)
+        }
+    }
+
+    private fun loadTaskDetails(id: Long) {
         viewModelScope.launch {
-            repository.saveTask(
+            repository.getTaskById(id)?.let { task ->
+                isCompleted = task.isCompleted
+            }
+            
+            repository.getAttachmentsByTaskId(id).forEach { attachment ->
+                when (attachment.type) {
+                    AttachmentType.PHOTO -> photos.add(Uri.parse(attachment.content))
+                    AttachmentType.VOICE -> voiceNotes.add(File(attachment.content))
+                    AttachmentType.TEXT -> textNotes.add(attachment.content)
+                }
+            }
+        }
+    }
+
+    fun saveTask(title: String, description: String, complete: Boolean = false, onSaved: () -> Unit) {
+        viewModelScope.launch {
+            val newId = repository.saveTask(
+                id = taskId,
                 title = title,
                 description = description,
                 photos = photos.toList(),
                 notes = textNotes.toList(),
-                voices = voiceNotes.toList()
+                voices = voiceNotes.toList(),
+                isCompleted = isCompleted || complete
             )
+            taskId = newId
+            if (complete) isCompleted = true
             onSaved()
         }
+    }
+
+    fun syncTask() {
+        // Placeholder for sync logic
     }
 
     fun addTextNote(note: String) {

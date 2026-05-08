@@ -19,10 +19,4 @@ class HomeViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
-
-    fun addTask(title: String, description: String) {
-        viewModelScope.launch {
-            repository.saveTask(title, description, emptyList(), emptyList(), emptyList())
-        }
-    }
 }
