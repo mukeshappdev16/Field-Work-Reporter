@@ -31,12 +31,13 @@ class TaskRepository @Inject constructor(
         photos: List<Uri>,
         notes: List<String>,
         voices: List<File>,
-        isCompleted: Boolean = false
+        isCompleted: Boolean = false,
+        isSynced: Boolean = false
     ): Long {
         val taskEntity = if (id != null) {
-            TaskEntity(id = id, title = title, description = description, isCompleted = isCompleted)
+            TaskEntity(id = id, title = title, description = description, isCompleted = isCompleted, isSynced = isSynced)
         } else {
-            TaskEntity(title = title, description = description, isCompleted = isCompleted)
+            TaskEntity(title = title, description = description, isCompleted = isCompleted, isSynced = isSynced)
         }
         
         val taskId = taskDao.insertTask(taskEntity)
@@ -86,7 +87,8 @@ class TaskRepository @Inject constructor(
             id = task.id,
             title = task.title,
             description = task.description,
-            isCompleted = task.isCompleted
+            isCompleted = task.isCompleted,
+            isSynced = task.isSynced
         )
     }
 }

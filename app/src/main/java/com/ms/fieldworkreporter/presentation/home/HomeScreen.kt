@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.PendingActions
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -171,21 +173,28 @@ fun TaskItem(task: Task, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = task.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (task.isSynced) Icons.Default.CloudDone else Icons.Default.CloudUpload,
+                        contentDescription = if (task.isSynced) "Synced" else "Not Synced",
+                        tint = if (task.isSynced) Color(0xFF10B981) else Color(0xFF94A3B8),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (task.isSynced) "Synced" else "Pending sync",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (task.isSynced) Color(0xFF10B981) else Color(0xFF94A3B8)
+                    )
+                }
             }
 
             if (task.isCompleted) {
                 Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = null,
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Completed",
                     tint = Color(0xFF059669),
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }

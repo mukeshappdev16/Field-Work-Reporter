@@ -2,6 +2,7 @@ package com.ms.fieldworkreporter.presentation.detail
 
 import android.Manifest
 import android.net.Uri
+import android.util.Base64
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,6 +26,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +62,7 @@ fun TaskDetailScreen(
     
     val context = LocalContext.current
     val isCompleted = viewModel.isCompleted
+    val isSynced = viewModel.isSynced
     val hasAttachments = viewModel.photos.isNotEmpty() || 
                        viewModel.textNotes.isNotEmpty() || 
                        viewModel.voiceNotes.isNotEmpty()
@@ -208,18 +211,30 @@ fun TaskDetailScreen(
                 ) {
                     if (isCompleted) {
                         Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
+                            color = if (isSynced) Color(0xFFD1FAE5) else MaterialTheme.colorScheme.errorContainer,
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(
-                                text = "This task is completed. It cannot be updated.",
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(12.dp)
-                            )
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isSynced) Icons.Default.CloudDone else Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = if (isSynced) Color(0xFF065F46) else MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = if (isSynced) "Synchronization Completed" else "This task is completed. It cannot be updated.",
+                                    color = if (isSynced) Color(0xFF065F46) else MaterialTheme.colorScheme.onErrorContainer,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
                     }
 
@@ -242,12 +257,19 @@ fun TaskDetailScreen(
                     OutlinedButton(
                         onClick = { viewModel.syncTask() },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
-                        enabled = isCompleted,
+                        enabled = isCompleted && !isSynced,
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Default.Sync, contentDescription = null)
+                        Icon(
+                            imageVector = if (isSynced) Icons.Default.CloudDone else Icons.Default.Sync, 
+                            contentDescription = null
+                        )
                         Spacer(Modifier.width(8.dp))
-                        Text("Initiate Sync", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = if (isSynced) "Synced" else "Initiate Sync", 
+                            fontSize = 16.sp, 
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -297,12 +319,21 @@ fun ImagePreviewDialog(
     onDelete: () -> Unit,
     isEditable: Boolean = true
 ) {
+    val model = remember(uri) {
+        if (uri.scheme == "data") {
+            val base64String = uri.toString().substringAfter("base64,")
+            Base64.decode(base64String, Base64.DEFAULT)
+        } else {
+            uri
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Photo Preview") },
         text = {
             AsyncImage(
-                model = uri,
+                model = model,
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -364,8 +395,16 @@ fun PhotoGallery(
             contentPadding = PaddingValues(vertical = 4.dp)
         ) {
             items(photos) { uri ->
+                val model = remember(uri) {
+                    if (uri.scheme == "data") {
+                        val base64String = uri.toString().substringAfter("base64,")
+                        Base64.decode(base64String, Base64.DEFAULT)
+                    } else {
+                        uri
+                    }
+                }
                 AsyncImage(
-                    model = uri,
+                    model = model,
                     contentDescription = null,
                     modifier = Modifier
                         .size(140.dp)

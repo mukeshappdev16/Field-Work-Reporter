@@ -27,4 +27,13 @@ interface TaskDao {
 
     @Query("DELETE FROM task_attachments WHERE taskId = :taskId")
     suspend fun deleteAttachmentsByTaskId(taskId: Long)
+
+    @Query("SELECT * FROM tasks WHERE isSynced = 0")
+    suspend fun getUnsyncedTasksWithDetails(): List<TaskWithDetails>
+
+    @Update
+    suspend fun updateTask(task: TaskEntity)
+
+    @Update
+    suspend fun updateAttachments(attachments: List<AttachmentEntity>)
 }

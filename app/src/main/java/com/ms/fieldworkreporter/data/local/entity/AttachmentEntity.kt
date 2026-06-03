@@ -17,7 +17,8 @@ data class AttachmentEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val taskId: Long,
     val type: AttachmentType,
-    val content: String // URI, File Path, or Note Text
+    val content: String, // URI, File Path, or Note Text
+    val remoteUrl: String? = null // Firebase Storage URL
 )
 
 enum class AttachmentType {
